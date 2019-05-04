@@ -16,7 +16,7 @@
 	<name>CTFBot-2019-HubertHive</name>
 
 	<properties>
-		<bot.main.class>cz.zcu.students.kiwi.ctfbot.CTFBot</bot.main.class>
+		<bot.main.class>cz.zcu.students.kiwi.ctf.bot.CTFBot</bot.main.class>
 	</properties>
 
     <dependencies>

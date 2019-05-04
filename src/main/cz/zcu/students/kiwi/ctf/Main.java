@@ -1,8 +1,9 @@
-package cz.zcu.students.kiwi.ctfbot;
+package cz.zcu.students.kiwi.ctf;
 
 import cz.cuni.amis.pogamut.ut2004.utils.UT2004BotRunner;
 import cz.cuni.amis.utils.exception.PogamutException;
-import cz.zcu.students.kiwi.ctfbot.initialize.InitializeCommandFactory;
+import cz.zcu.students.kiwi.ctf.bot.CTFBot;
+import cz.zcu.students.kiwi.ctf.bot.InitializeCommandFactory;
 
 import java.util.logging.Level;
 

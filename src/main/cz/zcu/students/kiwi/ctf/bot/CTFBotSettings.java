@@ -1,4 +1,6 @@
-package cz.zcu.students.kiwi.ctfbot;
+package cz.zcu.students.kiwi.ctf.bot;
+
+import cz.zcu.students.kiwi.ctf.MapTweaks;
 
 public class CTFBotSettings {
     /**

@@ -1,6 +1,7 @@
-package cz.zcu.students.kiwi.ctfbot;
+package cz.zcu.students.kiwi.ctf;
 
 import cz.cuni.amis.pogamut.ut2004.agent.module.sensor.NavigationGraphBuilder;
+import cz.zcu.students.kiwi.ctf.bot.CTFBot;
 
 /**
  * Class containing adjustments for navigation graph of PogamutCup competition maps.

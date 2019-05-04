@@ -1,4 +1,4 @@
-package cz.zcu.students.kiwi.ctfbot;
+package cz.zcu.students.kiwi.ctf.bot;
 
 import cz.cuni.amis.pogamut.base.agent.navigation.IPathFuture;
 import cz.cuni.amis.pogamut.base3d.worldview.object.ILocated;
@@ -12,16 +12,15 @@ public class CTFBotDebug {
 
     private final UT2004Draw draw;
 
-    boolean navigationPathDrawn = false;
     /**
      * 0-based; note that during the tournament all your bots will have botInstance == 0!
      */
-    public int botInstance = 0;
+    int botInstance = 0;
 
     /**
      * 0-based; note that during the tournament all your bots will have botTeamInstance == 0!
      */
-    public int botTeamInstance = 0;
+    int botTeamInstance = 0;
 
     CTFBotDebug(UT2004Draw draw) {
         this.draw = draw;
@@ -42,23 +41,6 @@ public class CTFBotDebug {
                 CTFBotDebug.navMeshDrawn = true;
                 return true;
             }
-        }
-
-        return false;
-    }
-
-    /**
-     * Spin-lock like test
-     *
-     * @return lock-capture status
-     */
-    boolean tryDrawNavigationPath() {
-        if (!CTFBot.SETTINGS.DRAW_NAVIGATION_PATH) {
-            return false;
-        }
-
-        if (!navigationPathDrawn) {
-            return navigationPathDrawn = true;
         }
 
         return false;

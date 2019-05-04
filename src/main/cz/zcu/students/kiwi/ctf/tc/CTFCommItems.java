@@ -1,6 +1,6 @@
-package cz.zcu.students.kiwi.ctfbot.tc;
+package cz.zcu.students.kiwi.ctf.tc;
 
-import cz.zcu.students.kiwi.ctfbot.CTFBot;
+import cz.zcu.students.kiwi.ctf.bot.CTFBot;
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.AnnotationListenerRegistrator;
 import cz.cuni.amis.pogamut.base.utils.logging.LogCategory;
 import cz.cuni.amis.pogamut.ut2004.teamcomm.bot.UT2004TCClient;

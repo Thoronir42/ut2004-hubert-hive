@@ -1,4 +1,4 @@
-package cz.zcu.students.kiwi.ctfbot;
+package cz.zcu.students.kiwi.ctf.bot;
 
 public class CTFBotLifeCycle {
     long selfLastUpdateStartMillis = 0;

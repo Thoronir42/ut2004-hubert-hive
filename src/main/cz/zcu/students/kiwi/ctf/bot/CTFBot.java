@@ -1,8 +1,5 @@
-package cz.zcu.students.kiwi.ctfbot;
+package cz.zcu.students.kiwi.ctf.bot;
 
-import cz.zcu.students.kiwi.ctfbot.initialize.InitializeCommandFactory;
-import cz.zcu.students.kiwi.ctfbot.tc.CTFCommItems;
-import cz.zcu.students.kiwi.ctfbot.tc.CTFCommObjectUpdates;
 import cz.cuni.amis.pathfinding.alg.astar.AStarResult;
 import cz.cuni.amis.pathfinding.map.IPFMapView;
 import cz.cuni.amis.pogamut.base.agent.navigation.impl.PrecomputedPathFuture;
@@ -27,12 +24,17 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.*;
 import cz.cuni.amis.pogamut.ut2004.teamcomm.bot.UT2004BotTCController;
 import cz.cuni.amis.utils.ExceptionToString;
 import cz.cuni.amis.utils.collections.MyCollections;
+import cz.zcu.students.kiwi.ctf.MapTweaks;
+import cz.zcu.students.kiwi.ctf.bot.behavior.BehaviorManager;
+import cz.zcu.students.kiwi.ctf.bot.behavior.BehaviorResource;
+import cz.zcu.students.kiwi.ctf.mapView.StandardMapView;
+import cz.zcu.students.kiwi.ctf.tc.CTFCommItems;
+import cz.zcu.students.kiwi.ctf.tc.CTFCommObjectUpdates;
 import math.geom2d.Vector2D;
 
-
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * CTF BOT TEMPLATE CLASS
@@ -47,47 +49,17 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
     private CTFCommItems<CTFBot> commItems;
     private CTFCommObjectUpdates<CTFBot> commObjectUpdates;
 
-    private final CTFBotDebug debug;
-    private final CTFBotLifeCycle lifeCycle = new CTFBotLifeCycle();
+    protected CTFBotDebug debug;
+    protected CTFBotLifeCycle lifeCycle;
+    private BehaviorManager behavior;
+
     private NavPoint lastAStarTarget = null;
 
-    public CTFBot() {
-        super();
-
-        this.debug = new CTFBotDebug(this.draw);
-    }
 
     // ==========================
     // EVENT LISTENERS / HANDLERS
     // ==========================
-    private IPFMapView<NavPoint> mapView = new IPFMapView<NavPoint>() {
-
-        @Override
-        public Collection<NavPoint> getExtraNeighbors(NavPoint node, Collection<NavPoint> mapNeighbors) {
-            return null;
-        }
-
-        @Override
-        public int getNodeExtraCost(NavPoint node, int mapCost) {
-            return 0;
-        }
-
-        @Override
-        public int getArcExtraCost(NavPoint nodeFrom, NavPoint nodeTo, int mapCost) {
-            return 0;
-        }
-
-        @Override
-        public boolean isNodeOpened(NavPoint node) {
-            return true;
-        }
-
-        @Override
-        public boolean isArcOpened(NavPoint nodeFrom, NavPoint nodeTo) {
-            return true;
-        }
-    };
-
+    private IPFMapView<NavPoint> mapView = new StandardMapView();
 
 
     /**
@@ -101,11 +73,16 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
         // INITIALIZATION OF COMM MODULES
         commItems = new CTFCommItems<CTFBot>(this);
         commObjectUpdates = new CTFCommObjectUpdates<CTFBot>(this);
+        this.behavior = new BehaviorManager(this);
     }
 
     @Override
     protected void initializeModules(UT2004Bot bot) {
         super.initializeModules(bot);
+
+        this.debug = new CTFBotDebug(this.draw);
+        this.lifeCycle = new CTFBotLifeCycle();
+
         levelGeometryModule.setAutoLoad(SETTINGS.LOAD_LEVEL_GEOMETRY);
     }
 
@@ -430,18 +407,16 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
             commItems.update();
             commObjectUpdates.update();
 
+            Set<BehaviorResource> changes = this.behavior.behave();
+
             // RANDOM NAVIGATION
-            if (navigation.isNavigating()) {
-                if (debug.tryDrawNavigationPath()) {
+            if (changes.contains(BehaviorResource.Movement)) {
+                log.info("RUNNING TO: " + navigation.getCurrentTarget());
+                if (SETTINGS.DRAW_NAVIGATION_PATH) {
                     draw.clearAll();
                     debug.drawNavigationPath(navigation.getCurrentPathCopy());
                 }
-                return;
             }
-            navigation.navigate(navPoints.getRandomNavPoint());
-            debug.navigationPathDrawn = false;
-
-            log.info("RUNNING TO: " + navigation.getCurrentTarget());
 
         } catch (Exception e) {
             // MAKE SURE THAT YOUR BOT WON'T FAIL!
@@ -450,13 +425,15 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
             // MAKE SURE THAT YOUR LOGIC DOES NOT TAKE MORE THAN 250 MS (Honestly, we have never seen anybody reaching even 150 ms per logic cycle...)
             // Note that it is perfectly OK, for instance, to count all path-distances between you and all possible pickup-points / items in the game
             // sort it and do some inference based on that.
-            long timeSpentInLogic = System.currentTimeMillis() - logicStartTime;
+            lifeCycle.lastLogicEndMillis = System.currentTimeMillis();
+            long timeSpentInLogic = lifeCycle.lastLogicEndMillis - logicStartTime;
+
             log.info("Logic time:         " + timeSpentInLogic + " ms");
             if (timeSpentInLogic >= 245) {
                 log.warning("!!! LOGIC TOO DEMANDING !!!");
             }
             log.info("===[ LOGIC END ]===");
-            lifeCycle.lastLogicEndMillis = System.currentTimeMillis();
+
         }
     }
 

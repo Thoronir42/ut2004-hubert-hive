@@ -1,9 +1,9 @@
-package cz.zcu.students.kiwi.ctfbot.tc;
+package cz.zcu.students.kiwi.ctf.tc;
 
-import cz.zcu.students.kiwi.ctfbot.CTFBot;
-import cz.zcu.students.kiwi.ctfbot.tc.msgs.TCFlagUpdate;
-import cz.zcu.students.kiwi.ctfbot.tc.msgs.TCItemUpdate;
-import cz.zcu.students.kiwi.ctfbot.tc.msgs.TCPlayerUpdate;
+import cz.zcu.students.kiwi.ctf.bot.CTFBot;
+import cz.zcu.students.kiwi.ctf.tc.msgs.TCFlagUpdate;
+import cz.zcu.students.kiwi.ctf.tc.msgs.TCItemUpdate;
+import cz.zcu.students.kiwi.ctf.tc.msgs.TCPlayerUpdate;
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.AnnotationListenerRegistrator;
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.EventListener;
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.ObjectClassEventListener;

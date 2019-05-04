@@ -1,10 +1,8 @@
-package cz.zcu.students.kiwi.ctfbot.initialize;
+package cz.zcu.students.kiwi.ctf.bot;
 
 import cz.cuni.amis.pogamut.ut2004.agent.module.sensor.AgentInfo;
 import cz.cuni.amis.pogamut.ut2004.agent.module.utils.UT2004Skins;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.Initialize;
-import cz.zcu.students.kiwi.ctfbot.CTFBotDebug;
-import cz.zcu.students.kiwi.ctfbot.CTFBotSettings;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

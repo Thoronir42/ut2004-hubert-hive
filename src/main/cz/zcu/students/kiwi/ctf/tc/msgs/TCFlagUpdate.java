@@ -1,4 +1,4 @@
-package cz.zcu.students.kiwi.ctfbot.tc.msgs;
+package cz.zcu.students.kiwi.ctf.tc.msgs;
 
 import cz.cuni.amis.pogamut.base3d.worldview.object.Location;
 import cz.cuni.amis.pogamut.unreal.communication.messages.UnrealId;

@@ -1,4 +1,4 @@
-package cz.zcu.students.kiwi.ctfbot;
+package cz.zcu.students.kiwi.ctf;
 
 import cz.cuni.amis.pogamut.ut2004.teamcomm.server.UT2004TCServer;
 
