@@ -1,10 +1,10 @@
 package cz.zcu.students.kiwi.ctfbot;
 
+import cz.zcu.students.kiwi.ctfbot.initialize.InitializeCommandFactory;
 import cz.zcu.students.kiwi.ctfbot.tc.CTFCommItems;
 import cz.zcu.students.kiwi.ctfbot.tc.CTFCommObjectUpdates;
 import cz.cuni.amis.pathfinding.alg.astar.AStarResult;
 import cz.cuni.amis.pathfinding.map.IPFMapView;
-import cz.cuni.amis.pogamut.base.agent.navigation.IPathFuture;
 import cz.cuni.amis.pogamut.base.agent.navigation.impl.PrecomputedPathFuture;
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.AnnotationListenerRegistrator;
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.EventListener;
@@ -15,7 +15,6 @@ import cz.cuni.amis.pogamut.base3d.worldview.object.ILocated;
 import cz.cuni.amis.pogamut.base3d.worldview.object.Rotation;
 import cz.cuni.amis.pogamut.unreal.communication.messages.UnrealId;
 import cz.cuni.amis.pogamut.ut2004.agent.module.sensor.AgentInfo;
-import cz.cuni.amis.pogamut.ut2004.agent.module.utils.UT2004Skins;
 import cz.cuni.amis.pogamut.ut2004.agent.navigation.levelGeometry.RayCastResult;
 import cz.cuni.amis.pogamut.ut2004.agent.navigation.navmesh.NavMeshClearanceComputer.ClearanceLimit;
 import cz.cuni.amis.pogamut.ut2004.agent.navigation.navmesh.pathfollowing.NavMeshNavigation;
@@ -26,20 +25,14 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.Initialize;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.*;
 import cz.cuni.amis.pogamut.ut2004.teamcomm.bot.UT2004BotTCController;
-import cz.cuni.amis.pogamut.ut2004.utils.UT2004BotRunner;
-import cz.cuni.amis.utils.Cooldown;
 import cz.cuni.amis.utils.ExceptionToString;
 import cz.cuni.amis.utils.collections.MyCollections;
-import cz.cuni.amis.utils.exception.PogamutException;
 import math.geom2d.Vector2D;
 
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 
 /**
  * CTF BOT TEMPLATE CLASS
@@ -48,68 +41,21 @@ import java.util.logging.Level;
 @AgentScoped
 public class CTFBot extends UT2004BotTCController<UT2004Bot> {
 
-    /**
-     * How many bots to start...
-     */
-    public static final int BOTS_TO_START = 4;
-    /**
-     * TRUE => attempt to auto-load level geometry on bot startup
-     */
-    public static final boolean LOAD_LEVEL_GEOMETRY = false;
-    /**
-     * TRUE => draws navmesh and terminates
-     */
-    public static final boolean DRAW_NAVMESH = true;
-    /**
-     * TRUE => rebinds NAVMESH+NAVIGATION GRAPH; useful when you add new map tweak into {@link MapTweaks}.
-     */
-    public static final boolean UPDATE_NAVMESH = false;
-    /**
-     * Whether to draw navigation path; works only if you are running 1 bot...
-     */
-    public static final boolean DRAW_NAVIGATION_PATH = false;
-    /**
-     * If true, all bots will enter RED team...
-     */
-    public static final boolean START_BOTS_IN_SINGLE_TEAM = false;
-    private static Object CLASS_MUTEX = new Object();
-    private static boolean navmeshDrawn = false;
-    /**
-     * How many bots we have started so far; used to split bots into teams.
-     */
-    private static AtomicInteger BOT_COUNT = new AtomicInteger(0);
-    /**
-     * How many bots have entered RED team.
-     */
-    private static AtomicInteger BOT_COUNT_RED_TEAM = new AtomicInteger(0);
-    /**
-     * How many bots have entered BLUE team.
-     */
-    private static AtomicInteger BOT_COUNT_BLUE_TEAM = new AtomicInteger(0);
-    Cooldown cd;
-    private boolean navigationPathDrawn = false;
-    /**
-     * 0-based; note that during the tournament all your bots will have botInstance == 0!
-     */
-    private int botInstance = 0;
-
-    /**
-     * 0-based; note that during the tournament all your bots will have botTeamInstance == 0!
-     */
-    private int botTeamInstance = 0;
+    public static CTFBotSettings SETTINGS = new CTFBotSettings();
+    public static InitializeCommandFactory INITIALIZE_FACTORY;
 
     private CTFCommItems<CTFBot> commItems;
     private CTFCommObjectUpdates<CTFBot> commObjectUpdates;
 
-    // =============
-    // BOT LIFECYCLE
-    // =============
-    private long selfLastUpdateStartMillis = 0;
-    private long selfTimeDelta = 0;
-    private long lastLogicStartMillis = 0;
-    private long lastLogicEndMillis = 0;
-    private long timeDelta = 0;
+    private final CTFBotDebug debug;
+    private final CTFBotLifeCycle lifeCycle = new CTFBotLifeCycle();
     private NavPoint lastAStarTarget = null;
+
+    public CTFBot() {
+        super();
+
+        this.debug = new CTFBotDebug(this.draw);
+    }
 
     // ==========================
     // EVENT LISTENERS / HANDLERS
@@ -142,17 +88,7 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
         }
     };
 
-    /**
-     * Main execute method of the program.
-     *
-     * @param args
-     * @throws PogamutException
-     */
-    public static void main(String[] args) throws PogamutException {
-        // Starts N agents of the same type at once
-        // WHEN YOU WILL BE SUBMITTING YOUR CODE, MAKE SURE THAT YOU RESET NUMBER OF STARTED AGENTS TO '1' !!!
-        new UT2004BotRunner(CTFBot.class, "CTFBot").setMain(true).setLogLevel(Level.INFO).startAgents(BOTS_TO_START);
-    }
+
 
     /**
      * Bot's preparation - called before the bot is connected to GB2004 and launched into UT2004.
@@ -170,7 +106,7 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
     @Override
     protected void initializeModules(UT2004Bot bot) {
         super.initializeModules(bot);
-        levelGeometryModule.setAutoLoad(LOAD_LEVEL_GEOMETRY);
+        levelGeometryModule.setAutoLoad(SETTINGS.LOAD_LEVEL_GEOMETRY);
     }
 
     /**
@@ -180,7 +116,7 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
     public void mapInfoObtained() {
         // See {@link MapTweaks} for details; add tweaks in there if required.
         MapTweaks.tweak(navBuilder);
-        navMeshModule.setReloadNavMesh(UPDATE_NAVMESH);
+        navMeshModule.setReloadNavMesh(SETTINGS.UPDATE_NAVMESH);
     }
 
     /**
@@ -206,28 +142,8 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
     public Initialize getInitializeCommand() {
         // IT IS FORBIDDEN BY COMPETITION RULES TO CHANGE DESIRED SKILL TO DIFFERENT NUMBER THAN 6
         // IT IS FORBIDDEN BY COMPETITION RULES TO ALTER ANYTHING EXCEPT NAME & SKIN VIA INITIALIZE COMMAND
-        // Jakub Gemrot -> targetName = "JakubGemrot"
-        String targetName = "MyName";
-        botInstance = BOT_COUNT.getAndIncrement();
 
-        int targetTeam = AgentInfo.TEAM_RED;
-        if (!START_BOTS_IN_SINGLE_TEAM) {
-            targetTeam = botInstance % 2 == 0 ? AgentInfo.TEAM_RED : AgentInfo.TEAM_BLUE;
-        }
-        switch (targetTeam) {
-            case AgentInfo.TEAM_RED:
-                botTeamInstance = BOT_COUNT_RED_TEAM.getAndIncrement();
-                targetName += "-RED-" + botTeamInstance;
-                break;
-            case AgentInfo.TEAM_BLUE:
-                botTeamInstance = BOT_COUNT_BLUE_TEAM.getAndIncrement();
-                targetName += "-BLUE-" + botTeamInstance;
-                break;
-        }
-        return new Initialize()
-                .setName(targetName).setSkin(targetTeam == AgentInfo.TEAM_RED ? UT2004Skins.SKINS[0] : UT2004Skins.SKINS[UT2004Skins.SKINS.length - 1])
-                .setTeam(targetTeam)
-                .setDesiredSkill(6);
+        return INITIALIZE_FACTORY.crete(this.debug);
     }
 
     /**
@@ -440,17 +356,17 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
      */
     @ObjectClassEventListener(objectClass = Self.class, eventClass = WorldObjectUpdatedEvent.class)
     public void selfUpdated(WorldObjectUpdatedEvent<Self> event) {
-        if (lastLogicStartMillis == 0) {
+        if (lifeCycle.lastLogicStartMillis == 0) {
             // IGNORE ... logic has not been executed yet...
             return;
         }
-        if (selfLastUpdateStartMillis == 0) {
-            selfLastUpdateStartMillis = System.currentTimeMillis();
+        long currentTimeMillis = System.currentTimeMillis();
+        if (lifeCycle.selfLastUpdateStartMillis == 0) {
+            lifeCycle.selfLastUpdateStartMillis = currentTimeMillis;
             return;
         }
-        long selfUpdateStartMillis = System.currentTimeMillis();
-        selfTimeDelta = selfUpdateStartMillis - selfLastUpdateStartMillis;
-        selfLastUpdateStartMillis = selfUpdateStartMillis;
+        long selfTimeDelta = currentTimeMillis - lifeCycle.selfLastUpdateStartMillis;
+        lifeCycle.selfLastUpdateStartMillis = currentTimeMillis;
         log.info("---[ SELF UPDATE | D: " + (selfTimeDelta) + "ms ]---");
 
         try {
@@ -489,30 +405,21 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
     @Override
     public void logic() {
         long logicStartTime = System.currentTimeMillis();
-        if (lastLogicStartMillis == 0) {
-            lastLogicStartMillis = logicStartTime;
+        long timeDelta;
+        if (lifeCycle.lastLogicStartMillis == 0) {
+            lifeCycle.lastLogicStartMillis = logicStartTime;
             log.info("===[ LOGIC ITERATION ]===");
             timeDelta = 1;
         } else {
-            timeDelta = logicStartTime - lastLogicStartMillis;
-            log.info("===[ LOGIC ITERATION | Delta: " + (timeDelta) + "ms | Since last: " + (logicStartTime - lastLogicEndMillis) + "ms]===");
-            lastLogicStartMillis = logicStartTime;
+            timeDelta = logicStartTime - lifeCycle.lastLogicStartMillis;
+            log.info("===[ LOGIC ITERATION | Delta: " + (timeDelta) + "ms | Since last: " + (logicStartTime - lifeCycle.lastLogicEndMillis) + "ms]===");
+            lifeCycle.lastLogicStartMillis = logicStartTime;
         }
 
-        if (DRAW_NAVMESH && botInstance == 0) {
-            boolean drawNavmesh = false;
-            synchronized (CLASS_MUTEX) {
-                if (!navmeshDrawn) {
-                    drawNavmesh = true;
-                    navmeshDrawn = true;
-                }
-            }
-            if (drawNavmesh) {
-                log.warning("!!! DRAWING NAVMESH !!!");
-                navMeshModule.getNavMeshDraw().draw(true, true);
-                navmeshDrawn = true;
-                log.warning("NavMesh drawn, waiting a bit to finish the drawing...");
-            }
+        if (debug.tryDrawNavMesh()) {
+            log.warning("!!! DRAWING NAVMESH !!!");
+            navMeshModule.getNavMeshDraw().draw(true, true);
+            log.warning("NavMesh drawn, waiting a bit to finish the drawing...");
         }
 
         try {
@@ -525,16 +432,15 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
 
             // RANDOM NAVIGATION
             if (navigation.isNavigating()) {
-                if (DRAW_NAVIGATION_PATH) {
-                    if (!navigationPathDrawn) {
-                        drawNavigationPath(true);
-                        navigationPathDrawn = true;
-                    }
+                if (debug.tryDrawNavigationPath()) {
+                    draw.clearAll();
+                    debug.drawNavigationPath(navigation.getCurrentPathCopy());
                 }
                 return;
             }
             navigation.navigate(navPoints.getRandomNavPoint());
-            navigationPathDrawn = false;
+            debug.navigationPathDrawn = false;
+
             log.info("RUNNING TO: " + navigation.getCurrentTarget());
 
         } catch (Exception e) {
@@ -550,7 +456,7 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
                 log.warning("!!! LOGIC TOO DEMANDING !!!");
             }
             log.info("===[ LOGIC END ]===");
-            lastLogicEndMillis = System.currentTimeMillis();
+            lifeCycle.lastLogicEndMillis = System.currentTimeMillis();
         }
     }
 
@@ -596,10 +502,6 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
         return items.isPickupSpawned(item);
     }
 
-    // =======
-    // DRAWING
-    // =======
-
     /**
      * Returns whether you can actually pick this 'item', based on "isSpawned" and "isPickable" in your current state and knowledge.
      */
@@ -641,37 +543,6 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
     // =====
     // AStar
     // =====
-
-    public void drawNavigationPath(boolean clearAll) {
-        if (clearAll) {
-            draw.clearAll();
-        }
-        List<ILocated> path = navigation.getCurrentPathCopy();
-        for (int i = 1; i < path.size(); ++i) {
-            draw.drawLine(path.get(i - 1), path.get(i));
-        }
-    }
-
-    public void drawPath(IPathFuture<? extends ILocated> pathFuture, boolean clearAll) {
-        if (clearAll) {
-            draw.clearAll();
-        }
-        List<? extends ILocated> path = pathFuture.get();
-        for (int i = 1; i < path.size(); ++i) {
-            draw.drawLine(path.get(i - 1), path.get(i));
-        }
-    }
-
-    public void drawPath(IPathFuture<? extends ILocated> pathFuture, Color color, boolean clearAll) {
-        if (clearAll) {
-            draw.clearAll();
-        }
-        if (color == null) color = Color.WHITE;
-        List<? extends ILocated> path = pathFuture.get();
-        for (int i = 1; i < path.size(); ++i) {
-            draw.drawLine(color, path.get(i - 1), path.get(i));
-        }
-    }
 
     public boolean navigateAStarPath(NavPoint targetNavPoint) {
         if (lastAStarTarget == targetNavPoint) {
