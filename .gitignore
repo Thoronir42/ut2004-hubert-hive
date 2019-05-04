@@ -1,0 +1,7 @@
+# map data stuff
+/navmesh/
+/map/
+/navmesh/
+/visibility/
+
+skip.*
