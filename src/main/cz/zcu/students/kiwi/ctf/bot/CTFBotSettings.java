@@ -22,7 +22,7 @@ public class CTFBotSettings {
     /**
      * Whether to draw navigation path; works only if you are running 1 bot...
      */
-    public final boolean DRAW_NAVIGATION_PATH = false;
+    public final boolean DRAW_NAVIGATION_PATH = true;
     /**
      * If true, all bots will enter RED team...
      */

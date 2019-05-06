@@ -27,6 +27,7 @@ import cz.cuni.amis.utils.collections.MyCollections;
 import cz.zcu.students.kiwi.ctf.MapTweaks;
 import cz.zcu.students.kiwi.ctf.bot.behavior.BehaviorManager;
 import cz.zcu.students.kiwi.ctf.bot.behavior.BehaviorResource;
+import cz.zcu.students.kiwi.ctf.bot.event.StuckItemForbidderListener;
 import cz.zcu.students.kiwi.ctf.mapView.StandardMapView;
 import cz.zcu.students.kiwi.ctf.tc.CTFCommItems;
 import cz.zcu.students.kiwi.ctf.tc.CTFCommObjectUpdates;
@@ -51,10 +52,16 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
 
     protected CTFBotDebug debug;
     protected CTFBotLifeCycle lifeCycle;
+    protected CTFBotItemStatus itemStatus;
+    public final CTFBotCan can;
+
     private BehaviorManager behavior;
 
     private NavPoint lastAStarTarget = null;
 
+    public CTFBot() {
+        this.can = new CTFBotCan(this);
+    }
 
     // ==========================
     // EVENT LISTENERS / HANDLERS
@@ -82,6 +89,7 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
 
         this.debug = new CTFBotDebug(this, this.draw);
         this.lifeCycle = new CTFBotLifeCycle();
+        this.itemStatus = new CTFBotItemStatus(this, this.getItems());
 
         levelGeometryModule.setAutoLoad(SETTINGS.LOAD_LEVEL_GEOMETRY);
     }
@@ -102,17 +110,23 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
      * For more info, see slides (page 8): http://diana.ms.mff.cuni.cz/pogamut_files/lectures/2010-2011/Pogamut3_Lecture_03.pdf
      */
     private void initWeaponPreferences() {
-        weaponPrefs.addGeneralPref(UT2004ItemType.MINIGUN, false);
-        weaponPrefs.addGeneralPref(UT2004ItemType.MINIGUN, true);
-        weaponPrefs.addGeneralPref(UT2004ItemType.LINK_GUN, false);
         weaponPrefs.addGeneralPref(UT2004ItemType.LIGHTNING_GUN, true);
         weaponPrefs.addGeneralPref(UT2004ItemType.SHOCK_RIFLE, true);
+        weaponPrefs.addGeneralPref(UT2004ItemType.MINIGUN, true);
         weaponPrefs.addGeneralPref(UT2004ItemType.ROCKET_LAUNCHER, true);
-        weaponPrefs.addGeneralPref(UT2004ItemType.LINK_GUN, true);
         weaponPrefs.addGeneralPref(UT2004ItemType.ASSAULT_RIFLE, true);
-        weaponPrefs.addGeneralPref(UT2004ItemType.FLAK_CANNON, false);
-        weaponPrefs.addGeneralPref(UT2004ItemType.FLAK_CANNON, true);
-        weaponPrefs.addGeneralPref(UT2004ItemType.BIO_RIFLE, true);
+        weaponPrefs.addGeneralPref(UT2004ItemType.SHIELD_GUN, false);
+
+        weaponPrefs.newPrefsRange(400)
+                .add(UT2004ItemType.FLAK_CANNON, true)
+                .add(UT2004ItemType.LIGHTNING_GUN, true)
+                .add(UT2004ItemType.LINK_GUN, true)
+                .add(UT2004ItemType.ROCKET_LAUNCHER, true);
+
+        weaponPrefs.newPrefsRange(1000)
+                .add(UT2004ItemType.LIGHTNING_GUN, true)
+                .add(UT2004ItemType.SHOCK_RIFLE, true)
+                .add(UT2004ItemType.LINK_GUN, false);
     }
 
     @Override
@@ -368,6 +382,7 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
      */
     @Override
     public void beforeFirstLogic() {
+        this.navigation.addStrongNavigationListener(new StuckItemForbidderListener(this));
     }
 
     /**
@@ -399,6 +414,7 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
             log.warning("NavMesh drawn, waiting a bit to finish the drawing...");
         }
 
+        boolean excep = false;
         try {
             // LOG VARIOUS INTERESTING VALUES
 //            logMind();
@@ -407,21 +423,25 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
             /*commItems.update();
             commObjectUpdates.update();*/
 
+            this.itemStatus.clear();
+
             Set<BehaviorResource> changes = this.behavior.behave();
 
             // RANDOM NAVIGATION
-            if (changes.contains(BehaviorResource.Movement)) {
-                log.info("RUNNING TO: " + navigation.getCurrentTarget());
-                if (SETTINGS.DRAW_NAVIGATION_PATH) {
-                    if (this.debug.botInstance == 0) draw.clearAll();
+            if (changes.contains(BehaviorResource.Navigation)) {
+                if (navigation.isNavigating()) log.info("RUNNING TO: " + navigation.getCurrentTarget());
+            }
 
-                    debug.drawNavigationPath(navigation.getCurrentPathCopy());
-                }
+            if (SETTINGS.DRAW_NAVIGATION_PATH) {
+                if (this.debug.botInstance == 0) draw.clearAll();
+
+                debug.drawNavigationPath(navigation.getCurrentPathCopy());
             }
 
         } catch (Exception e) {
+            excep = true;
             // MAKE SURE THAT YOUR BOT WON'T FAIL!
-            log.info(ExceptionToString.process(e));
+            log.severe(ExceptionToString.process(e));
         } finally {
             // MAKE SURE THAT YOUR LOGIC DOES NOT TAKE MORE THAN 250 MS (Honestly, we have never seen anybody reaching even 150 ms per logic cycle...)
             // Note that it is perfectly OK, for instance, to count all path-distances between you and all possible pickup-points / items in the game
@@ -434,6 +454,8 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
                 log.warning("!!! LOGIC TOO DEMANDING !!!");
             }
             log.info("===[ LOGIC END ]===");
+
+            this.getName().setTag((excep ? "X-" : "") + this.behavior.getTag());
 
         }
     }
@@ -548,4 +570,11 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
         return path;
     }
 
+    public CTFBotItemStatus getItemStatus() {
+        return this.itemStatus;
+    }
+
+    public BehaviorManager getBehavior() {
+        return this.behavior;
+    }
 }

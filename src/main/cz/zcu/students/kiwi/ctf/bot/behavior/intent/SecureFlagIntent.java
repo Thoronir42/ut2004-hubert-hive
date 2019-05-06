@@ -1,34 +1,31 @@
 package cz.zcu.students.kiwi.ctf.bot.behavior.intent;
 
-import cz.cuni.amis.pogamut.base3d.worldview.object.ILocated;
 import cz.zcu.students.kiwi.ctf.bot.CTFBot;
-import cz.zcu.students.kiwi.ctf.bot.behavior.BehaviorManager;
-import cz.zcu.students.kiwi.ctf.bot.behavior.BehaviorResource;
+import cz.zcu.students.kiwi.ctf.bot.behavior.Intent;
+import cz.zcu.students.kiwi.ctf.bot.behavior.IntentAction;
+import cz.zcu.students.kiwi.ctf.bot.behavior.Overwrite;
 
 public class SecureFlagIntent extends Intent {
 
-    private ILocated target;
+    @Override
+    public boolean isReady(CTFBot bot) {
+        return bot.getCTF().isBotCarryingEnemyFlag();
+    }
 
     @Override
-    public boolean actOn(BehaviorManager manager, CTFBot bot) {
-        if (!manager.blockResource(BehaviorResource.Movement, this)) {
-            return false;
-        }
-
-        if (bot.getCTF().isEnemyFlagHome()) {
-            manager.setNavigationTarget(bot.getCTF().getEnemyBase());
-            return true;
-        } else if (!bot.getCTF().isOurFlagHome()) {
-            /* todo: find our flag */
-            manager.releaseResource(BehaviorResource.Movement, this);
-            return false;
-        } else if (bot.getCTF().isBotCarryingEnemyFlag()) {
-            manager.setNavigationTarget(bot.getCTF().getOurBase());
-        } else {
-            manager.releaseResource(BehaviorResource.Movement, this);
-            return false;
-        }
-
+    public boolean run(IntentAction action, CTFBot bot) {
+        action.navigate(bot.getCTF().getOurBase(), this, Overwrite.Single);
         return true;
+    }
+
+    @Override
+    public boolean stop(IntentAction action, CTFBot bot) {
+        action.stopNavigating(this);
+        return true;
+    }
+
+    @Override
+    public String getShortCode() {
+        return "F-SCR";
     }
 }
