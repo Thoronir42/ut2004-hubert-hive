@@ -3,13 +3,15 @@ package cz.zcu.students.kiwi.ctf.bot;
 import cz.cuni.amis.pogamut.base.agent.navigation.IPathFuture;
 import cz.cuni.amis.pogamut.base3d.worldview.object.ILocated;
 import cz.cuni.amis.pogamut.ut2004.agent.navigation.navmesh.drawing.UT2004Draw;
+import cz.zcu.students.kiwi.ctf.game.TeamHelper;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.List;
 
 public class CTFBotDebug {
     private static boolean navMeshDrawn = false;
 
+    private final CTFBot bot;
     private final UT2004Draw draw;
 
     /**
@@ -22,7 +24,8 @@ public class CTFBotDebug {
      */
     int botTeamInstance = 0;
 
-    CTFBotDebug(UT2004Draw draw) {
+    CTFBotDebug(CTFBot bot, UT2004Draw draw) {
+        this.bot = bot;
         this.draw = draw;
     }
 
@@ -47,8 +50,10 @@ public class CTFBotDebug {
     }
 
     public void drawNavigationPath(List<ILocated> path) {
+        Color c = TeamHelper.getTeamColor(this.bot.getInfo().getTeam());
+
         for (int i = 1; i < path.size(); ++i) {
-            draw.drawLine(path.get(i - 1), path.get(i));
+            draw.drawLine(c, path.get(i - 1), path.get(i));
         }
     }
 

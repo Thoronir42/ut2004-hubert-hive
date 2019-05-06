@@ -32,8 +32,8 @@ public class InitializeCommandFactory {
      * @param bot - Only for setting of debug stuff `botInstance` and `botTeamInstance`
      * @return
      */
-    public Initialize crete(CTFBotDebug bot) {
-        String targetName = "MyName";
+    public Initialize create(CTFBotDebug bot) {
+        String targetName = "Kiwi";
         bot.botInstance = BOT_COUNT.getAndIncrement();
 
         int targetTeam = this.decideTeam(bot.botInstance);

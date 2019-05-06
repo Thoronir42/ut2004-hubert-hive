@@ -14,7 +14,7 @@ public class CTFBotSettings {
     /**
      * TRUE => draws navmesh and terminates
      */
-    public final boolean DRAW_NAVMESH = true;
+    public final boolean DRAW_NAVMESH = false;
     /**
      * TRUE => rebinds NAVMESH+NAVIGATION GRAPH; useful when you add new map tweak into {@link MapTweaks}.
      */

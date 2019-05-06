@@ -80,7 +80,7 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
     protected void initializeModules(UT2004Bot bot) {
         super.initializeModules(bot);
 
-        this.debug = new CTFBotDebug(this.draw);
+        this.debug = new CTFBotDebug(this, this.draw);
         this.lifeCycle = new CTFBotLifeCycle();
 
         levelGeometryModule.setAutoLoad(SETTINGS.LOAD_LEVEL_GEOMETRY);
@@ -120,7 +120,7 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
         // IT IS FORBIDDEN BY COMPETITION RULES TO CHANGE DESIRED SKILL TO DIFFERENT NUMBER THAN 6
         // IT IS FORBIDDEN BY COMPETITION RULES TO ALTER ANYTHING EXCEPT NAME & SKIN VIA INITIALIZE COMMAND
 
-        return INITIALIZE_FACTORY.crete(this.debug);
+        return INITIALIZE_FACTORY.create(this.debug);
     }
 
     /**
@@ -344,7 +344,7 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
         }
         long selfTimeDelta = currentTimeMillis - lifeCycle.selfLastUpdateStartMillis;
         lifeCycle.selfLastUpdateStartMillis = currentTimeMillis;
-        log.info("---[ SELF UPDATE | D: " + (selfTimeDelta) + "ms ]---");
+//        log.info("---[ SELF UPDATE | D: " + (selfTimeDelta) + "ms ]---");
 
         try {
 
@@ -401,11 +401,11 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
 
         try {
             // LOG VARIOUS INTERESTING VALUES
-            logMind();
+//            logMind();
 
             // UPDATE TEAM COMM
-            commItems.update();
-            commObjectUpdates.update();
+            /*commItems.update();
+            commObjectUpdates.update();*/
 
             Set<BehaviorResource> changes = this.behavior.behave();
 
@@ -413,7 +413,8 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
             if (changes.contains(BehaviorResource.Movement)) {
                 log.info("RUNNING TO: " + navigation.getCurrentTarget());
                 if (SETTINGS.DRAW_NAVIGATION_PATH) {
-                    draw.clearAll();
+                    if (this.debug.botInstance == 0) draw.clearAll();
+
                     debug.drawNavigationPath(navigation.getCurrentPathCopy());
                 }
             }
@@ -440,7 +441,7 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
     /**
      * It is good in-general to periodically log anything that relates to your's {@link CTFBot#logic()} decision making.
      * <p>
-     * You might consider exporting these values to some custom Swing window (you crete for yourself) that will be more readable.
+     * You might consider exporting these values to some custom Swing window (you create for yourself) that will be more readable.
      */
     public void logMind() {
         log.info("My health/armor:   " + info.getHealth() + " / " + info.getArmor() + " (low:" + info.getLowArmor() + " / high:" + info.getHighArmor() + ")");

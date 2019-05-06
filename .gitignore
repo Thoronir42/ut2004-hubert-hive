@@ -4,4 +4,6 @@
 /navmesh/
 /visibility/
 
+/target/
+
 skip.*
