@@ -112,4 +112,11 @@ public final class BehaviorManager {
             this.resourceMap.remove(resource, intent);
         }
     }
+
+    public void reInit() {
+        this.resourceMap.forEach((resource, intent) -> {
+            intent.stop(action, bot);
+            this.resourceMap.remove(resource);
+        });
+    }
 }

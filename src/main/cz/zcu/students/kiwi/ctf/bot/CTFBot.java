@@ -227,6 +227,8 @@ public class CTFBot extends UT2004BotTCController<UT2004Bot> {
             Player killer = (Player) world.get(killerId);
             log.info("KILLED by" + killerId.getStringId());
         }
+
+        this.behavior.reInit();
     }
 
     /**
