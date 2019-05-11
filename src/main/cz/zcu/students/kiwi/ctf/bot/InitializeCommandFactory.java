@@ -8,7 +8,9 @@ import cz.zcu.students.kiwi.ctf.game.TeamHelper;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class InitializeCommandFactory {
-    private CTFBotSettings settings;
+
+    private int desiredTeam = -1;
+    private int botSkill = 6;
 
 
     /**
@@ -25,8 +27,16 @@ public class InitializeCommandFactory {
      */
     private static AtomicInteger BOT_COUNT_BLUE_TEAM = new AtomicInteger(0);
 
-    public InitializeCommandFactory(CTFBotSettings settings) {
-        this.settings = settings;
+    public void setDesiredTeam(int desiredTeam) {
+        if (desiredTeam < -1 || desiredTeam > 1) {
+            throw new IllegalArgumentException("Desired team argument must be -1, 0 or 1. " + desiredTeam + " given");
+        }
+
+        this.desiredTeam = desiredTeam;
+    }
+
+    public void setBotSkill(int botSkill) {
+        this.botSkill = botSkill;
     }
 
     /**
@@ -50,17 +60,14 @@ public class InitializeCommandFactory {
 
         return new Initialize()
                 .setTeam(targetTeam)
-                .setDesiredSkill(6)
+                .setDesiredSkill(this.botSkill)
                 .setName(targetName + "-" + TeamHelper.getBotName(targetTeam, bot.botTeamInstance))
                 .setSkin(targetTeam == AgentInfo.TEAM_RED ? UT2004Skins.SKINS[0] : UT2004Skins.SKINS[UT2004Skins.SKINS.length - 1]);
     }
 
     private int decideTeam(int instanceNumber) {
-        int targetTeam = AgentInfo.TEAM_RED;
-        if (!this.settings.START_BOTS_IN_SINGLE_TEAM && instanceNumber % 2 == 1) {
-            targetTeam = AgentInfo.TEAM_BLUE;
-        }
+        if (this.desiredTeam != -1) return this.desiredTeam;
 
-        return targetTeam;
+        return instanceNumber % 2 == 1 ? AgentInfo.TEAM_BLUE : AgentInfo.TEAM_RED;
     }
 }
