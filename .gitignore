@@ -3,6 +3,7 @@
 /map/
 /navmesh/
 /visibility/
+VisibilityMatrix*
 
 /target/
 
